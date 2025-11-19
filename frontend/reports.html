@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FinTrack - Reports</title>
+    <script>
+      window.API_BASE = "http://localhost:5001";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --brand: #16a085;
+        --brand-2: #1abc9c;
+        --dark: #2c3e50;
+        --muted: #607d8b;
+        --bg: #f4f7f9;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: #222;
+      }
+      header.shared-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--dark);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        gap: 18px;
+        z-index: 1100;
+      }
+      .logo {
+        font-weight: 700;
+      }
+      nav {
+        flex: 1;
+      }
+      nav ul {
+        display: flex;
+        gap: 14px;
+        list-style: none;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+      }
+      nav a {
+        color: rgba(255, 255, 255, 0.95);
+        text-decoration: none;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+        position: relative;
+      }
+      main {
+        padding: 90px 20px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .report-controls {
+        background: #fff;
+        padding: 14px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+      .report-controls button {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 0;
+        background: var(--brand-2);
+        color: #fff;
+        cursor: pointer;
+      }
+      .report-results {
+        background: #fff;
+        padding: 14px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      }
+      footer {
+        margin-top: 24px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shared-header">
+      <div class="logo">FinTrack</div>
+      <nav>
+        <ul>
+          <li><a href="index.html">Dashboard</a></li>
+          <li><a href="transactions.html">Transactions</a></li>
+          <li><a href="reports.html" class="active">Reports</a></li>
+          <li><a href="settings.html">Settings</a></li>
+        </ul>
+      </nav>
+      <div class="actions">
+        <div class="avatar-btn" id="avatarBtn">
+          <img
+            id="avatarImg"
+            src="https://ui-avatars.com/api/?name=U&background=16a085&color=fff&rounded=true"
+            alt="avatar"
+          />
+        </div>
+        <div class="user-dropdown" id="userDropdown"></div>
+      </div>
+    </header>
+
+    <main>
+      <h1>Reports</h1>
+      <section class="report-controls">
+        <div>
+          <label>From<br /><input type="date" id="repFrom" /></label>
+        </div>
+        <div>
+          <label>To<br /><input type="date" id="repTo" /></label>
+        </div>
+        <div style="margin-left: auto">
+          <button id="genReportBtn">Generate Report</button>
+          <button id="exportCsvBtn">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="report-results">
+        <h3>Report Output</h3>
+        <div id="reportContent">No report generated yet.</div>
+      </section>
+    </main>
+
+    <footer>&copy; 2025 FinTrack</footer>
+
+    <script src="api.js"></script>
+    <script>
+      // header auth behaviour (same pattern)
+      (function () {
+        const avatarBtn = document.getElementById("avatarBtn");
+        const userDropdown = document.getElementById("userDropdown");
+        avatarBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          userDropdown.classList.toggle("show");
+        });
+        document.addEventListener("click", (e) => {
+          if (!userDropdown.contains(e.target) && !avatarBtn.contains(e.target))
+            userDropdown.classList.remove("show");
+        });
+      })();
+
+      document
+        .getElementById("genReportBtn")
+        .addEventListener("click", async () => {
+          const from = document.getElementById("repFrom").value;
+          const to = document.getElementById("repTo").value;
+          // simple report: category trends between dates
+          try {
+            const data = await ft.apiGet(`/api/transactions?user_id=1`);
+            let rows = data;
+            if (from) rows = rows.filter((r) => r.date >= from);
+            if (to) rows = rows.filter((r) => r.date <= to);
+            const byCat = {};
+            rows.forEach((r) => {
+              byCat[r.category] =
+                (byCat[r.category] || 0) + Math.abs(Number(r.amount));
+            });
+            const html = `<ul>${Object.entries(byCat)
+              .map(([k, v]) => `<li>${k}: ₹${v.toFixed(2)}</li>`)
+              .join("")}</ul>`;
+            document.getElementById("reportContent").innerHTML =
+              html || "No data in range.";
+          } catch (err) {
+            console.error(err);
+            document.getElementById("reportContent").textContent =
+              "Failed to generate report.";
+          }
+        });
+
+      document.getElementById("exportCsvBtn").addEventListener("click", () => {
+        // simple download via window.location to backend export endpoint
+        window.location = `${
+          window.API_BASE || "http://localhost:5001"
+        }/api/export/transactions.csv?user_id=1`;
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FinTrack - Transactions</title>
+    <script>
+      window.API_BASE = "http://localhost:5001";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --brand: #16a085;
+        --brand-2: #1abc9c;
+        --dark: #2c3e50;
+        --muted: #6b7b80;
+        --bg: #f4f7f9;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: #222;
+      }
+      header.shared-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--dark);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        gap: 18px;
+        z-index: 1100;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+      }
+      .logo {
+        font-weight: 700;
+      }
+      nav {
+        flex: 1;
+      }
+      nav ul {
+        display: flex;
+        gap: 14px;
+        list-style: none;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+      }
+      nav a {
+        color: rgba(255, 255, 255, 0.95);
+        text-decoration: none;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+      nav a.active {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--brand-2);
+      }
+      .search-bar input {
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: none;
+        min-width: 160px;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+        position: relative;
+      }
+      .avatar-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.12);
+        background: #fff;
+        cursor: pointer;
+      }
+      .avatar-btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .user-dropdown {
+        position: absolute;
+        top: 64px;
+        right: 0;
+        background: #fff;
+        color: #222;
+        min-width: 200px;
+        border-radius: 10px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.14);
+        display: none;
+        z-index: 1200;
+        overflow: hidden;
+      }
+      .user-dropdown.show {
+        display: block;
+      }
+      main {
+        padding: 90px 20px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 18px;
+      }
+      .filters {
+        background: #fff;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .filters label {
+        font-weight: 600;
+        color: var(--muted);
+      }
+      input[type="date"],
+      select,
+      input[type="text"] {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #e7eef0;
+      }
+      .transactions {
+        background: #fff;
+        padding: 14px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #eef2f3;
+        text-align: left;
+      }
+      .pagination {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 12px;
+      }
+      footer {
+        margin-top: 24px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shared-header">
+      <div class="logo">FinTrack</div>
+      <nav>
+        <ul>
+          <li><a href="index.html" data-link="index.html">Dashboard</a></li>
+          <li>
+            <a
+              href="transactions.html"
+              data-link="transactions.html"
+              class="active"
+              >Transactions</a
+            >
+          </li>
+          <li><a href="reports.html" data-link="reports.html">Reports</a></li>
+          <li>
+            <a href="settings.html" data-link="settings.html">Settings</a>
+          </li>
+        </ul>
+      </nav>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <input id="globalSearch" placeholder="Search transactions..." />
+        <button class="btn-primary" id="searchBtn">Search</button>
+      </div>
+      <div class="actions" style="margin-left: 12px">
+        <div style="position: relative">
+          <div class="avatar-btn" id="avatarBtn">
+            <img
+              id="avatarImg"
+              src="https://ui-avatars.com/api/?name=U&background=16a085&color=fff&rounded=true&size=128"
+              alt="avatar"
+            />
+          </div>
+          <div class="user-dropdown" id="userDropdown"></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <h1>Transactions</h1>
+      <section class="filters">
+        <div>
+          <label for="dateFrom">Date From</label><br /><input
+            type="date"
+            id="dateFrom"
+          />
+        </div>
+        <div>
+          <label for="dateTo">Date To</label><br /><input
+            type="date"
+            id="dateTo"
+          />
+        </div>
+        <div>
+          <label for="category">Category</label><br />
+          <select id="category">
+            <option value="">All</option>
+            <option>Food</option>
+            <option>Utilities</option>
+            <option>Income</option>
+            <option>Transport</option>
+            <option>Entertainment</option>
+          </select>
+        </div>
+        <div>
+          <label for="type">Type</label><br />
+          <select id="type">
+            <option value="">All</option>
+            <option>Credit</option>
+            <option>Debit</option>
+          </select>
+        </div>
+        <div style="margin-left: auto; align-self: flex-end">
+          <button class="btn-primary" onclick="applyFilters()">
+            Apply Filters
+          </button>
+        </div>
+      </section>
+
+      <section class="transactions">
+        <h3>All Transactions</h3>
+        <table id="transactionsTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination">
+          <button id="prevBtn" onclick="prevPage()" disabled>Prev</button
+          ><button id="nextBtn" onclick="nextPage()">Next</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>&copy; 2025 FinTrack. All rights reserved.</footer>
+
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal" role="dialog" aria-modal="true" style="width: 360px">
+        <h3 style="margin: 0 0 10px">Login to FinTrack</h3>
+        <input id="loginEmail" type="email" placeholder="Email" />
+        <input id="loginPassword" type="password" placeholder="Password" />
+        <div style="display: flex; gap: 8px; justify-content: flex-end">
+          <button class="btn-primary" id="loginBtn">Login</button>
+          <button class="btn" id="closeModalBtn" style="background: #9aa4a8">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+      // reuse header auth code (same as index)
+      (function () {
+        const avatarBtn = document.getElementById("avatarBtn");
+        const userDropdown = document.getElementById("userDropdown");
+        const modal = document.getElementById("modalBackdrop");
+        const loginBtn = document.getElementById("loginBtn");
+        const closeModalBtn = document.getElementById("closeModalBtn");
+
+        function showDropdown() {
+          userDropdown.classList.add("show");
+        }
+        function hideDropdown() {
+          userDropdown.classList.remove("show");
+        }
+
+        avatarBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          userDropdown.classList.toggle("show");
+        });
+        document.addEventListener("click", (e) => {
+          if (!userDropdown.contains(e.target) && !avatarBtn.contains(e.target))
+            hideDropdown();
+        });
+
+        closeModalBtn.addEventListener("click", () =>
+          modal.classList.remove("show")
+        );
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) modal.classList.remove("show");
+        });
+
+        // login behavior (same demo)
+        loginBtn.addEventListener("click", () => {
+          const email = (
+            document.getElementById("loginEmail").value || ""
+          ).trim();
+          const pwd = document.getElementById("loginPassword").value || "";
+          if (!email || !pwd) {
+            alert("Enter email and password (demo accepts any).");
+            return;
+          }
+          sessionStorage.setItem("ft_email", email);
+          userDropdown.innerHTML = `<div style="padding:10px;font-weight:700">${email}</div><button onclick="location.href='settings.html'">Profile</button><button onclick="(function(){sessionStorage.removeItem('ft_email');location.reload();})();">Logout</button>`;
+          modal.classList.remove("show");
+        });
+      })();
+
+      // transactions logic (fetch from backend)
+      let rowsPerPage = 5,
+        currentPage = 1,
+        filteredTransactions = [];
+      function renderTable(page = 1) {
+        const tbody = document.querySelector("#transactionsTable tbody");
+        tbody.innerHTML = "";
+        const start = (page - 1) * rowsPerPage,
+          end = start + rowsPerPage;
+        const items = filteredTransactions.slice(start, end);
+        items.forEach((tx) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${tx.date}</td><td>${tx.description}</td><td>${
+            tx.category
+          }</td><td style="color:${tx.amount < 0 ? "#e74c3c" : "#27ae60"}">${
+            tx.amount < 0 ? "-" : ""
+          }$${Math.abs(tx.amount).toFixed(2)}</td><td>${tx.type}</td>`;
+          tbody.appendChild(tr);
+        });
+        updatePagination();
+      }
+      function updatePagination() {
+        const totalPages = Math.max(
+          1,
+          Math.ceil(filteredTransactions.length / rowsPerPage)
+        );
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+      }
+      function prevPage() {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable(currentPage);
+        }
+      }
+      function nextPage() {
+        const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTable(currentPage);
+        }
+      }
+
+      function applyFilters() {
+        const dateFrom = document.getElementById("dateFrom").value;
+        const dateTo = document.getElementById("dateTo").value;
+        const category = document.getElementById("category").value;
+        const type = document.getElementById("type").value;
+        const sq = (
+          document.getElementById("globalSearch") || { value: "" }
+        ).value.toLowerCase();
+        filteredTransactions = window._allTxs.filter((tx) => {
+          const mFrom = !dateFrom || tx.date >= dateFrom;
+          const mTo = !dateTo || tx.date <= dateTo;
+          const mCat = !category || tx.category === category;
+          const mType = !type || tx.type === type;
+          const mSq = !sq || tx.description.toLowerCase().includes(sq);
+          return mFrom && mTo && mCat && mType && mSq;
+        });
+        currentPage = 1;
+        renderTable(currentPage);
+      }
+
+      // load transactions on DOM ready
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          const txs = await ft.apiGet("/api/transactions?user_id=1");
+          window._allTxs = txs || [];
+          filteredTransactions = [...window._allTxs];
+          renderTable(1);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    </script>
+  </body>
+</html>

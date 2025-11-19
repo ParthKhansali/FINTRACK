@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FinTrack - Settings</title>
+    <script>
+      window.API_BASE = "http://localhost:5001";
+    </script>
+    <style>
+      :root {
+        --brand: #16a085;
+        --dark: #2c3e50;
+        --bg: #f4f7f9;
+        --muted: #607d8b;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: #222;
+      }
+      header.shared-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--dark);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        gap: 18px;
+        z-index: 1100;
+      }
+      .logo {
+        font-weight: 700;
+      }
+      nav {
+        flex: 1;
+      }
+      nav ul {
+        display: flex;
+        gap: 14px;
+        list-style: none;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+      }
+      nav a {
+        color: rgba(255, 255, 255, 0.95);
+        text-decoration: none;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+      main {
+        padding: 90px 20px;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        background: #fff;
+        padding: 18px;
+        border-radius: 10px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      }
+      form label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #e9eef0;
+        margin-bottom: 12px;
+      }
+      .btn-primary {
+        background: var(--brand);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 0;
+        cursor: pointer;
+      }
+      footer {
+        margin-top: 28px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shared-header">
+      <div class="logo">FinTrack</div>
+      <nav>
+        <ul>
+          <li><a href="index.html">Dashboard</a></li>
+          <li><a href="transactions.html">Transactions</a></li>
+          <li><a href="reports.html">Reports</a></li>
+          <li><a href="settings.html" class="active">Settings</a></li>
+        </ul>
+      </nav>
+      <div class="actions">
+        <div class="avatar-btn" id="avatarBtn">
+          <img
+            id="avatarImg"
+            src="https://ui-avatars.com/api/?name=U&background=16a085&color=fff&rounded=true"
+            alt="avatar"
+          />
+        </div>
+        <div class="user-dropdown" id="userDropdown"></div>
+      </div>
+    </header>
+
+    <main>
+      <h1>Account Settings</h1>
+      <div class="card">
+        <form id="settingsForm">
+          <label for="name">Display Name</label>
+          <input id="name" type="text" placeholder="Your name" />
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@example.com" />
+          <label for="currency">Currency</label>
+          <select id="currency">
+            <option>USD</option>
+            <option>INR</option>
+            <option>EUR</option>
+          </select>
+          <div style="text-align: right">
+            <button type="button" id="saveBtn" class="btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <footer>&copy; 2025 FinTrack</footer>
+
+    <script src="api.js"></script>
+    <script>
+      (function () {
+        const avatarBtn = document.getElementById("avatarBtn");
+        const userDropdown = document.getElementById("userDropdown");
+        avatarBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          userDropdown.classList.toggle("show");
+        });
+        document.addEventListener("click", (e) => {
+          if (!userDropdown.contains(e.target) && !avatarBtn.contains(e.target))
+            userDropdown.classList.remove("show");
+        });
+
+        document.getElementById("saveBtn").addEventListener("click", () => {
+          alert(
+            "Saved (demo). Implement save via backend POST to /api/user/update"
+          );
+        });
+      })();
+    </script>
+  </body>
+</html>
